@@ -2,7 +2,7 @@ package node
 
 import (
 	"crypto/ed25519"
-	"crypto/sha256"
+	"crypto/sha1"
 	"fmt"
 	"net"
 	"os"
@@ -11,7 +11,7 @@ import (
 
 // This is the representation of a remote node on the network
 type Node struct {
-	Cid  [32]byte
+	Cid  [20]byte
 	IP   net.IP
 	Port int
 }
@@ -40,7 +40,7 @@ func CreateLocalNode(node *Node) (*LocalNode, error) {
 		return nil, err
 	}
 
-	pubsum := sha256.Sum256(pub)
+	pubsum := sha1.Sum(pub)
 	filename := fmt.Sprintf("./%x.key", pubsum)
 	err = os.WriteFile(filename, priv, 0600)
 	if err != nil {
@@ -55,21 +55,21 @@ func CreateLocalNode(node *Node) (*LocalNode, error) {
 	return n, nil
 }
 
-func (node *LocalNode) Ping(cid [32]byte) error {
+func (node *LocalNode) Ping(cid [20]byte) error {
 	return nil
 }
 
-func (node *LocalNode) Store(cid [32]byte) error {
-	return nil
-
-}
-
-func (node *LocalNode) FindNode(cid [32]byte) *Node {
+func (node *LocalNode) Store(cid [20]byte) error {
 	return nil
 
 }
 
-func (node *LocalNode) FindValue(cid [32]byte) error {
+func (node *LocalNode) FindNode(cid [20]byte) *Node {
+	return nil
+
+}
+
+func (node *LocalNode) FindValue(cid [20]byte) error {
 	return nil
 
 }
