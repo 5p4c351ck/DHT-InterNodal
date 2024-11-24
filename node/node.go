@@ -6,60 +6,70 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 )
 
-type Peer interface {
-	Ping(cid [32]byte) error
-	Store()
-	FindNode(cid [32]byte) ([][32]byte, []net.UDPAddr)
-	FindValue()
-}
-
+// This is the representation of a remote node on the network
 type Node struct {
-	cid     [32]byte
-	pubKey  ed25519.PublicKey
-	udpaddr net.UDPAddr
+	Cid  [32]byte
+	IP   net.IP
+	Port int
 }
 
-func (node *Node) Ping(cid [32]byte) error {
-	return nil
+func CreateNode(ip string, port string) (*Node, error) {
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return nil, err
+	}
+	n := &Node{
+		IP:   net.ParseIP(ip),
+		Port: p,
+	}
+	return n, nil
 }
 
-func (node *Node) Store(cid [32]byte) error {
-	return nil
-
+// This is the representation of a local node on the network
+type LocalNode struct {
+	*Node
+	pubKey ed25519.PublicKey
 }
 
-func (node *Node) FindNode(cid [32]byte) ([][32]byte, []net.UDPAddr) {
-	return nil, nil
-
-}
-
-func (node *Node) FindValue(cid [32]byte) error {
-	return nil
-
-}
-
-func (node *Node) Cid() [32]byte {
-	return node.cid
-
-}
-
-func CreateNode() (*Node, error) {
+func CreateLocalNode(node *Node) (*LocalNode, error) {
 	pub, priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		return nil, err
 	}
 
 	pubsum := sha256.Sum256(pub)
-
 	filename := fmt.Sprintf("./%x.key", pubsum)
-
 	err = os.WriteFile(filename, priv, 0600)
 	if err != nil {
 		return nil, err
 	}
 
-	n := &Node{cid: pubsum, pubKey: pub}
+	n := &LocalNode{
+		Node:   node,
+		pubKey: pub,
+	}
+	n.Cid = pubsum
 	return n, nil
+}
+
+func (node *LocalNode) Ping(cid [32]byte) error {
+	return nil
+}
+
+func (node *LocalNode) Store(cid [32]byte) error {
+	return nil
+
+}
+
+func (node *LocalNode) FindNode(cid [32]byte) *Node {
+	return nil
+
+}
+
+func (node *LocalNode) FindValue(cid [32]byte) error {
+	return nil
+
 }
