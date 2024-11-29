@@ -31,6 +31,7 @@ func CreateNode(ip string, port string) (*Node, error) {
 // This is the representation of a local node on the network
 type LocalNode struct {
 	*Node
+	*routingTableState
 	pubKey ed25519.PublicKey
 }
 

@@ -1,10 +1,8 @@
-package routingtable
+package node
 
 import (
 	"sync"
 	"time"
-
-	"github.com/5p4c351ck/DHT-InterNodal/node"
 )
 
 const (
@@ -14,7 +12,11 @@ const (
 )
 
 type routingTableState struct {
-	routingTable  [][]*node.Node
+	routingTable  [][]*Node
 	bucketRefresh [b]time.Time
 	mutex         *sync.Mutex
+}
+
+func (r *routingTableState) Init() error {
+	return nil
 }
