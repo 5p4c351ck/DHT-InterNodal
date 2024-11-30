@@ -16,7 +16,7 @@ type Node struct {
 	Port int
 }
 
-func CreateNode(ip string, port string) (*Node, error) {
+func NewNode(ip string, port string) (*Node, error) {
 	p, err := strconv.Atoi(port)
 	if err != nil {
 		return nil, err
@@ -31,16 +31,20 @@ func CreateNode(ip string, port string) (*Node, error) {
 // This is the representation of a local node on the network
 type LocalNode struct {
 	*Node
-	*routingTableState
+	*RoutingTable
 	pubKey ed25519.PublicKey
 }
 
-func CreateLocalNode(node *Node) (*LocalNode, error) {
-	pub, priv, err := ed25519.GenerateKey(nil)
+func NewLocalNode(node *Node) (*LocalNode, error) {
+	rt, err := NewRoutingTable(node)
 	if err != nil {
 		return nil, err
 	}
 
+	pub, priv, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		return nil, err
+	}
 	pubsum := sha1.Sum(pub)
 	filename := fmt.Sprintf("./%x.key", pubsum)
 	err = os.WriteFile(filename, priv, 0600)
@@ -49,8 +53,9 @@ func CreateLocalNode(node *Node) (*LocalNode, error) {
 	}
 
 	n := &LocalNode{
-		Node:   node,
-		pubKey: pub,
+		Node:         node,
+		RoutingTable: rt,
+		pubKey:       pub,
 	}
 	n.Cid = pubsum
 	return n, nil
