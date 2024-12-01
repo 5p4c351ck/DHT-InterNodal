@@ -20,6 +20,7 @@ type RoutingTable struct {
 	owner         *LocalNode
 }
 
+// Creates a new routing table
 func NewRoutingTable(localnode *LocalNode) (*RoutingTable, error) {
 	if localnode == nil {
 		return nil, errors.New("node cannot be nil")
@@ -32,6 +33,7 @@ func NewRoutingTable(localnode *LocalNode) (*RoutingTable, error) {
 	return rt, nil
 }
 
+// Returns the k-bucket index where the node would be stored
 func (r *RoutingTable) kBucketIndex(node *Node) (int, error) {
 	dinstance, err := r.Dinstance(node)
 	if err != nil {
@@ -41,6 +43,7 @@ func (r *RoutingTable) kBucketIndex(node *Node) (int, error) {
 	return bitLen - 1, nil
 }
 
+// Returns the dinstance between the input node and the node that owns the routing table
 func (r *RoutingTable) Dinstance(node *Node) (*big.Int, error) {
 	if node == nil {
 		return nil, errors.New("node cannot be nil")
@@ -57,6 +60,7 @@ func (r *RoutingTable) Dinstance(node *Node) (*big.Int, error) {
 	return dinstance, nil
 }
 
+// Inserts a node to the routing table according to kademlia specifications
 func (r *RoutingTable) InsertNode(node *Node) (int, error) {
 	index, err := r.kBucketIndex(node)
 	if err != nil {
