@@ -3,7 +3,9 @@ package node
 import (
 	"crypto/ed25519"
 	"crypto/sha1"
+	"errors"
 	"fmt"
+	"math/big"
 	"net"
 	"os"
 	"strconv"
@@ -11,7 +13,7 @@ import (
 
 // This is the representation of a remote node on the network
 type Node struct {
-	Cid  [20]byte
+	Cid  [b / 8]byte
 	IP   net.IP
 	Port int
 }
@@ -28,7 +30,7 @@ func NewNode(ip string, port string) (*Node, error) {
 	return n, nil
 }
 
-// This is the representation of a local node on the network
+// This is the representation of the local node on the network
 type LocalNode struct {
 	*Node
 	*RoutingTable
@@ -36,11 +38,6 @@ type LocalNode struct {
 }
 
 func NewLocalNode(node *Node) (*LocalNode, error) {
-	rt, err := NewRoutingTable(node)
-	if err != nil {
-		return nil, err
-	}
-
 	pub, priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		return nil, err
@@ -53,16 +50,37 @@ func NewLocalNode(node *Node) (*LocalNode, error) {
 	}
 
 	n := &LocalNode{
-		Node:         node,
-		RoutingTable: rt,
-		pubKey:       pub,
+		Node:   node,
+		pubKey: pub,
 	}
 	n.Cid = pubsum
+
+	rt, err := NewRoutingTable(n)
+	if err != nil {
+		return nil, err
+	}
+	n.RoutingTable = rt
 	return n, nil
 }
 
-func (node *LocalNode) Ping(cid [20]byte) error {
-	return nil
+func Dinstance(node1, node2 *Node) (*big.Int, error) {
+	if node1 == nil || node2 == nil {
+		return nil, errors.New("node cannot be nil")
+	}
+
+	cidlength := len(node1.Cid)
+	result := make([]byte, cidlength)
+
+	for i := 0; i < cidlength; i++ {
+		result[i] = node1.Cid[i] ^ node2.Cid[i]
+	}
+
+	dinstance := new(big.Int).SetBytes(result)
+	return dinstance, nil
+}
+
+func (node *LocalNode) Ping(n *Node) bool {
+	return true
 }
 
 func (node *LocalNode) Store(cid [20]byte) error {
