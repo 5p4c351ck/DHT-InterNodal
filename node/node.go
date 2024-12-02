@@ -84,7 +84,7 @@ func (node *LocalNode) Ping(n *Node) bool {
 		senderNode:   node.Node,
 		receiverNode: n,
 		request:      true,
-		data:         "Test",
+		data:         []byte("data"),
 	}
 	node.sendRequest(msg)
 	return true

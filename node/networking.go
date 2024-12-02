@@ -15,7 +15,7 @@ func (node *LocalNode) Server() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	//defer conn.Close()
 	fmt.Println("Listening on port", port)
 
 	buffer := make([]byte, 1024)
@@ -33,7 +33,7 @@ func (node *LocalNode) sendRequest(m *message) error {
 		return fmt.Errorf("sender or receiver is nil")
 	}
 	if !m.request {
-		return fmt.Errorf("sessage is a reply")
+		return fmt.Errorf("message is a reply")
 	}
 	raddr := &net.UDPAddr{
 		IP:   m.receiverNode.IP,
