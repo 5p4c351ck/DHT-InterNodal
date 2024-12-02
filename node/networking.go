@@ -28,12 +28,12 @@ func (node *LocalNode) Server() error {
 	}
 }
 
-func (node *LocalNode) sendRequest(m message) error {
+func (node *LocalNode) sendRequest(m *message) error {
 	if m.senderNode == nil || m.receiverNode == nil {
-		return fmt.Errorf("Sender or receiver is nil")
+		return fmt.Errorf("sender or receiver is nil")
 	}
 	if !m.request {
-		return fmt.Errorf("Message is a reply")
+		return fmt.Errorf("sessage is a reply")
 	}
 	raddr := &net.UDPAddr{
 		IP:   m.receiverNode.IP,
@@ -45,7 +45,12 @@ func (node *LocalNode) sendRequest(m message) error {
 	}
 	defer conn.Close()
 
-	input := []byte("Testing connectivity")
-	_, err = conn.Write(input)
-
+	input, ok := m.data.([]byte)
+	if ok {
+		_, err = conn.Write(input)
+		if err != nil {
+			return err
+		}
+	}
+	return fmt.Errorf("message format incorrect")
 }

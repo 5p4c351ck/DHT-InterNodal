@@ -80,6 +80,13 @@ func Dinstance(node1, node2 *Node) (*big.Int, error) {
 }
 
 func (node *LocalNode) Ping(n *Node) bool {
+	msg := &message{
+		senderNode:   node.Node,
+		receiverNode: n,
+		request:      true,
+		data:         "Test",
+	}
+	node.sendRequest(msg)
 	return true
 }
 
