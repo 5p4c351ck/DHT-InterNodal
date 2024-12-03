@@ -20,8 +20,8 @@ type Codec interface {
 }
 
 type CodecImp struct {
-	msg    *message
-	stream []byte
+	msg        *message
+	bytestream []byte
 }
 
 func (codec *CodecImp) Serialize() error {
@@ -40,12 +40,12 @@ func (codec *CodecImp) Serialize() error {
 	SerializedMsg = append(SerializedMsg, lengthSerialized[:]...)
 	SerializedMsg = append(SerializedMsg, buffer.Bytes()...)
 
-	codec.stream = SerializedMsg
+	codec.bytestream = SerializedMsg
 	return nil
 }
 
 func (codec *CodecImp) Deserialize() error {
-	buffer := bytes.NewBuffer(codec.stream)
+	buffer := bytes.NewBuffer(codec.bytestream)
 	msg := &message{}
 	decoder := gob.NewDecoder(buffer)
 	err := decoder.Decode(msg)

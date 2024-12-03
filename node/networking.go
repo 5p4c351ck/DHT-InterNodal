@@ -6,29 +6,52 @@ import (
 )
 
 const (
-	protocol = "udp"
-	port     = ":8080"
+	protocolUDP = "udp"
+	port        = ":8080"
 )
 
 func (node *LocalNode) Server() error {
-	conn, err := net.ListenPacket(protocol, port)
+	conn, err := net.ListenPacket(protocolUDP, port)
 	if err != nil {
 		return err
 	}
-	//defer conn.Close()
-	fmt.Println("Listening on port", port)
+	defer conn.Close()
+	bufferSize := 1024
+	maxConns := 10
 
-	buffer := make([]byte, 1024)
+	//Implement a semaphore using a buffered channel
+	var semaphore = make(chan struct{}, maxConns)
+
+	buffer := make([]byte, bufferSize)
 	for {
 		n, addr, err := conn.ReadFrom(buffer)
 		if err != nil {
 			continue
 		}
-		fmt.Printf("Received %s from address %s", string(buffer[:n]), addr)
+		//Delay new connections until the semaphore's buffer is not full
+		semaphore <- struct{}{}
+
+		stream := make([]byte, n)
+		copy(stream, buffer[:])
+
+		go func(stream []byte, addr net.Addr) {
+			defer func() { <-semaphore }()
+			codec := &CodecImp{
+				bytestream: stream,
+			}
+			err := codec.Deserialize()
+			if err != nil {
+				return //Add logging
+			}
+			err = node.Reply(codec.msg)
+			if err != nil {
+				return //Add logging
+			}
+		}(stream, addr)
 	}
 }
 
-func (node *LocalNode) sendRequest(m *message) error {
+func (node *LocalNode) Request(m *message) error {
 	if m.senderNode == nil || m.receiverNode == nil {
 		return fmt.Errorf("sender or receiver is nil")
 	}
@@ -39,7 +62,7 @@ func (node *LocalNode) sendRequest(m *message) error {
 		IP:   m.receiverNode.IP,
 		Port: m.receiverNode.Port,
 	}
-	conn, err := net.DialUDP(protocol, nil, raddr)
+	conn, err := net.DialUDP(protocolUDP, nil, raddr)
 	if err != nil {
 		return err
 	}
@@ -53,4 +76,8 @@ func (node *LocalNode) sendRequest(m *message) error {
 		}
 	}
 	return fmt.Errorf("message format incorrect")
+}
+
+func (node *LocalNode) Reply(m *message) error {
+	return nil
 }
