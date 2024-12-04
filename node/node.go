@@ -4,10 +4,8 @@ import (
 	"crypto/ed25519"
 	"crypto/sha1"
 	"errors"
-	"fmt"
 	"math/big"
 	"net"
-	"os"
 	"strconv"
 )
 
@@ -43,12 +41,13 @@ func NewLocalNode(node *Node) (*LocalNode, error) {
 		return nil, err
 	}
 	pubsum := sha1.Sum(pub)
+	/* Comment out for testing without creating files
 	filename := fmt.Sprintf("./%x.key", pubsum)
 	err = os.WriteFile(filename, priv, 0600)
 	if err != nil {
 		return nil, err
 	}
-
+	*/
 	n := &LocalNode{
 		Node:   node,
 		pubKey: pub,
