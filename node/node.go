@@ -40,6 +40,7 @@ func NewLocalNode(node *Node) (*LocalNode, error) {
 	if err != nil {
 		return nil, err
 	}
+	_ = priv
 	pubsum := sha1.Sum(pub)
 	/* Comment out for testing without creating files
 	filename := fmt.Sprintf("./%x.key", pubsum)
@@ -85,7 +86,12 @@ func (node *LocalNode) Ping(n *Node) bool {
 		request:      true,
 		data:         []byte("data"),
 	}
-	node.Request(msg)
+
+	codec := CodecImp{}
+	err := node.Request(msg, codec)
+	if err != nil {
+		return false
+	}
 	return true
 }
 

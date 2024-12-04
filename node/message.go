@@ -15,21 +15,18 @@ const (
 )
 
 type Codec interface {
-	Serialize()
-	Deserialize()
+	Serialize(msg *message) ([]byte, error)
+	Deserialize(bytestream []byte) (*message, error)
 }
 
-type CodecImp struct {
-	msg        *message
-	bytestream []byte
-}
+type CodecImp struct{} //Possibly add some state later
 
-func (codec *CodecImp) Serialize() error {
+func (codec *CodecImp) Serialize(msg *message) ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)
-	err := encoder.Encode(codec.msg)
+	err := encoder.Encode(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	lenght := buffer.Len()
 
@@ -40,20 +37,18 @@ func (codec *CodecImp) Serialize() error {
 	SerializedMsg = append(SerializedMsg, lengthSerialized[:]...)
 	SerializedMsg = append(SerializedMsg, buffer.Bytes()...)
 
-	codec.bytestream = SerializedMsg
-	return nil
+	return SerializedMsg, nil
 }
 
-func (codec *CodecImp) Deserialize() error {
-	buffer := bytes.NewBuffer(codec.bytestream)
+func (codec *CodecImp) Deserialize(bytestream []byte) (*message, error) {
+	buffer := bytes.NewBuffer(bytestream)
 	msg := &message{}
 	decoder := gob.NewDecoder(buffer)
 	err := decoder.Decode(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	codec.msg = msg
-	return nil
+	return msg, nil
 }
 
 func ReadIntoStream(conn io.Reader) ([]byte, error) {

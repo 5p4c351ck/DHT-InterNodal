@@ -36,14 +36,12 @@ func (node *LocalNode) Server() error {
 
 		go func(stream []byte, addr net.Addr) {
 			defer func() { <-semaphore }()
-			codec := &CodecImp{
-				bytestream: stream,
-			}
-			err := codec.Deserialize()
+			codec := &CodecImp{}
+			msg, err := codec.Deserialize(stream)
 			if err != nil {
 				return //Add logging
 			}
-			err = node.Reply(codec.msg)
+			err = node.Reply(msg)
 			if err != nil {
 				return //Add logging
 			}
@@ -51,7 +49,7 @@ func (node *LocalNode) Server() error {
 	}
 }
 
-func (node *LocalNode) Request(m *message) error {
+func (node *LocalNode) Request(m *message, codec Codec) error {
 	if m.senderNode == nil || m.receiverNode == nil {
 		return fmt.Errorf("sender or receiver is nil")
 	}
@@ -67,15 +65,16 @@ func (node *LocalNode) Request(m *message) error {
 		return err
 	}
 	defer conn.Close()
-
-	input, ok := m.data.([]byte)
-	if ok {
-		_, err = conn.Write(input)
-		if err != nil {
-			return err
-		}
+	input, err := codec.Serialize(m)
+	if err != nil {
+		return err
 	}
-	return fmt.Errorf("message format incorrect")
+	_, err = conn.Write(input)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (node *LocalNode) Reply(m *message) error {
