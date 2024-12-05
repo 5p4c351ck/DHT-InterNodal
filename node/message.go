@@ -41,7 +41,7 @@ func (codec *CodecImp) Serialize(msg *message) ([]byte, error) {
 }
 
 func (codec *CodecImp) Deserialize(bytestream []byte) (*message, error) {
-	buffer := bytes.NewBuffer(bytestream)
+	buffer := bytes.NewBuffer(bytestream[8:])
 	msg := &message{}
 	decoder := gob.NewDecoder(buffer)
 	err := decoder.Decode(msg)
