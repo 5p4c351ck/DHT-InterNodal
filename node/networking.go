@@ -50,15 +50,15 @@ func (node *LocalNode) Server() error {
 }
 
 func (node *LocalNode) Request(m *message, codec Codec) error {
-	if m.senderNode == nil || m.receiverNode == nil {
+	if m.SenderNode == nil || m.ReceiverNode == nil {
 		return fmt.Errorf("sender or receiver is nil")
 	}
-	if !m.request {
+	if !m.Request {
 		return fmt.Errorf("message is a reply")
 	}
 	raddr := &net.UDPAddr{
-		IP:   m.receiverNode.IP,
-		Port: m.receiverNode.Port,
+		IP:   m.ReceiverNode.IP,
+		Port: m.ReceiverNode.Port,
 	}
 	conn, err := net.DialUDP(protocolUDP, nil, raddr)
 	if err != nil {

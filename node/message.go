@@ -70,12 +70,12 @@ func ReadIntoStream(conn io.Reader) ([]byte, error) {
 }
 
 type message struct {
-	messageType   int
-	transactionID int64
-	senderNode    *Node
-	receiverNode  *Node
-	request       bool
-	data          interface{}
+	MessageType   int
+	TransactionID int64
+	SenderNode    *Node
+	ReceiverNode  *Node
+	Request       bool
+	Data          interface{}
 }
 
 type storeRequest struct {

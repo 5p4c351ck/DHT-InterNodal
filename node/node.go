@@ -81,10 +81,10 @@ func Dinstance(node1, node2 *Node) (*big.Int, error) {
 
 func (node *LocalNode) Ping(n *Node) bool {
 	msg := &message{
-		senderNode:   node.Node,
-		receiverNode: n,
-		request:      true,
-		data:         []byte("data"),
+		SenderNode:   node.Node,
+		ReceiverNode: n,
+		Request:      true,
+		Data:         []byte("data"),
 	}
 
 	codec := &CodecImp{}
