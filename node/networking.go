@@ -18,7 +18,7 @@ func (node *LocalNode) Server() error {
 	defer conn.Close()
 	bufferSize := 1024
 	maxConns := 10
-
+	initMessages()
 	//Implement a semaphore using a buffered channel
 	var semaphore = make(chan struct{}, maxConns)
 
