@@ -87,7 +87,7 @@ func (node *LocalNode) Ping(n *Node) bool {
 		data:         []byte("data"),
 	}
 
-	codec := CodecImp{}
+	codec := &CodecImp{}
 	err := node.Request(msg, codec)
 	if err != nil {
 		return false
