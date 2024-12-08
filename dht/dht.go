@@ -24,8 +24,11 @@ func NewDHT(ip string, port string) (DHT, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = ln.Server()
-	if err != nil {
+	serverErrChan := make(chan error, 1)
+	go func() {
+		serverErrChan <- ln.Server()
+	}()
+	if err = <-serverErrChan; err != nil {
 		return nil, err
 	}
 	dht := &DHTimpl{
