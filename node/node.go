@@ -89,23 +89,20 @@ func (node *LocalNode) Ping(n *Node) bool {
 
 	codec := &CodecImp{}
 	err := node.Request(msg, codec)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
-func (node *LocalNode) Store(cid [20]byte) error {
+func (node *LocalNode) Store(cid [20]byte, value []byte) error {
 	return nil
 
 }
 
-func (node *LocalNode) FindNode(cid [20]byte) *Node {
-	return nil
+func (node *LocalNode) FindNode(cid [20]byte) ([]Node, error) {
+	return nil, nil
 
 }
 
-func (node *LocalNode) FindValue(cid [20]byte) error {
-	return nil
+func (node *LocalNode) FindValue(cid [20]byte) ([]byte, error) {
+	return nil, nil
 
 }
