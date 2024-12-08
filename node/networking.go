@@ -16,6 +16,7 @@ func (node *LocalNode) Server() error {
 		return err
 	}
 	defer conn.Close()
+	fmt.Println("Node is online")
 	bufferSize := 1024
 	maxConns := 10
 	initMessages()

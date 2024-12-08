@@ -24,6 +24,10 @@ func NewDHT(ip string, port string) (DHT, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = ln.Server()
+	if err != nil {
+		return nil, err
+	}
 	dht := &DHTimpl{
 		LocalNode: ln,
 	}
