@@ -15,7 +15,15 @@ type DHTimpl struct {
 	*node.LocalNode
 }
 
-func NewDHT(ln *node.LocalNode) (DHT, error) {
+func NewDHT(ip string, port string) (DHT, error) {
+	n, err := node.NewNode(ip, port)
+	if err != nil {
+		return nil, err
+	}
+	ln, err := node.NewLocalNode(n)
+	if err != nil {
+		return nil, err
+	}
 	dht := &DHTimpl{
 		LocalNode: ln,
 	}

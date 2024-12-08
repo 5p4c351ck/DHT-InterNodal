@@ -7,11 +7,11 @@ import (
 
 const (
 	protocolUDP = "udp"
-	port        = ":8080"
 )
 
 func (node *LocalNode) Server() error {
-	conn, err := net.ListenPacket(protocolUDP, port)
+	address := fmt.Sprintf("%s:%d", node.IP.String(), node.Port)
+	conn, err := net.ListenPacket(protocolUDP, address)
 	if err != nil {
 		return err
 	}
