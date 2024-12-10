@@ -21,6 +21,11 @@ type Codec interface {
 
 type CodecImp struct{} //Possibly add some state later
 
+func NewCodec() Codec {
+	codec := &CodecImp{}
+	return codec
+}
+
 func (codec *CodecImp) Serialize(msg *message) ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)

@@ -36,22 +36,22 @@ func (node *LocalNode) Server(ErrChan chan error) {
 		stream := make([]byte, n)
 		copy(stream, buffer[:])
 
-		go func(stream []byte, addr net.Addr) {
+		go func(stream []byte, address net.Addr, connection net.PacketConn) {
 			defer func() { <-semaphore }()
-			codec := &CodecImp{}
+			codec := NewCodec()
 			msg, err := codec.Deserialize(stream)
 			if err != nil {
 				return //Add logging
 			}
-			err = node.Reply(msg)
+			err = node.Reply(msg, addr, conn)
 			if err != nil {
 				return //Add logging
 			}
-		}(stream, addr)
+		}(stream, addr, conn)
 	}
 }
 
-func (node *LocalNode) Request(m *message, codec Codec) error {
+func (node *LocalNode) Request(m *message) error {
 	if m.SenderNode == nil || m.ReceiverNode == nil {
 		return fmt.Errorf("sender or receiver is nil")
 	}
@@ -67,6 +67,7 @@ func (node *LocalNode) Request(m *message, codec Codec) error {
 		return err
 	}
 	defer conn.Close()
+	codec := NewCodec()
 	input, err := codec.Serialize(m)
 	if err != nil {
 		return err
@@ -79,6 +80,25 @@ func (node *LocalNode) Request(m *message, codec Codec) error {
 	return nil
 }
 
-func (node *LocalNode) Reply(m *message) error {
+func (node *LocalNode) Reply(m *message, address net.Addr, connection net.PacketConn) error {
+	replyMessage := &message{}
+	switch m.MessageType {
+	case messagePing:
+		//Set message for Ping reply
+	case messageStore:
+		//Set message for Store reply
+	case messageFindNode:
+		//Set message for FindNode reply
+	case messageFindValue:
+		//Set message for FindValue reply
+	default:
+		//Set message for default case
+	}
+	codec := NewCodec()
+	input, err := codec.Serialize(replyMessage)
+	if err != nil {
+		return err
+	}
+	connection.WriteTo(input, address)
 	return nil
 }
