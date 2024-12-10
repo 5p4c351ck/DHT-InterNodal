@@ -9,15 +9,15 @@ const (
 	protocolUDP = "udp"
 )
 
-func (node *LocalNode) Server(ErrChan chan error) error {
+func (node *LocalNode) Server(ErrChan chan error) {
 	address := fmt.Sprintf("%s:%d", node.IP.String(), node.Port)
 	conn, err := net.ListenPacket(protocolUDP, address)
 	if err != nil {
 		ErrChan <- err
-		return err
+		return
 	}
 	defer conn.Close()
-	ErrChan <- err
+	ErrChan <- nil
 	bufferSize := 1024
 	maxConns := 10
 	initMessages()
