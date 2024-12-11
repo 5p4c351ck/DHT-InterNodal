@@ -43,7 +43,15 @@ func (node *LocalNode) Server(ErrChan chan error) {
 			if err != nil {
 				return //Add logging
 			}
-			err = node.Reply(msg, addr, conn)
+			replyMsg, err := node.ConstructReply(msg)
+			if err != nil {
+				return //Add logging
+			}
+			replyStream, err := codec.Serialize(replyMsg)
+			if err != nil {
+				return //Add logging
+			}
+			err = node.Send(replyStream, address, connection)
 			if err != nil {
 				return //Add logging
 			}
@@ -51,54 +59,31 @@ func (node *LocalNode) Server(ErrChan chan error) {
 	}
 }
 
-func (node *LocalNode) Request(m *message) error {
-	if m.SenderNode == nil || m.ReceiverNode == nil {
-		return fmt.Errorf("sender or receiver is nil")
-	}
-	if !m.Request {
-		return fmt.Errorf("message is a reply")
-	}
-	raddr := &net.UDPAddr{
-		IP:   m.ReceiverNode.IP,
-		Port: m.ReceiverNode.Port,
-	}
-	conn, err := net.DialUDP(protocolUDP, nil, raddr)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	codec := NewCodec()
-	input, err := codec.Serialize(m)
-	if err != nil {
-		return err
-	}
-	_, err = conn.Write(input)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (node *LocalNode) Send(stream []byte, address net.Addr, connection net.PacketConn) error {
+	//Handle any extra logic
+	connection.WriteTo(stream, address)
 }
 
-func (node *LocalNode) Reply(m *message, address net.Addr, connection net.PacketConn) error {
+func (node *LocalNode) ConstructReply(msg *message) (*message, error) {
 	replyMessage := &message{}
-	switch m.MessageType {
+	var reply interface{}
+	var err error
+
+	switch msg.MessageType {
 	case messagePing:
-		//Set message for Ping reply
+		reply = "PONG"
 	case messageStore:
-		//Set message for Store reply
+		reply, err = storeReplyMsg(msg)
 	case messageFindNode:
-		//Set message for FindNode reply
+		reply, err = findNodeReplyMsg(msg)
 	case messageFindValue:
-		//Set message for FindValue reply
+		reply, err = findValueReplyMsg(msg)
 	default:
-		//Set message for default case
+		return nil, fmt.Errorf("Invalid type in message with transaction ID %d", msg.TransactionID)
 	}
-	codec := NewCodec()
-	input, err := codec.Serialize(replyMessage)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	connection.WriteTo(input, address)
-	return nil
+	replyMessage.Data = reply
+	return replyMessage, nil
 }

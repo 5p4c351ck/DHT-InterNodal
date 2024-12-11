@@ -109,6 +109,18 @@ type findValueReply struct {
 	ClosestNodes [][]*Node
 }
 
+func storeReplyMsg(msg *message) (storeReply, error) {
+
+}
+
+func findNodeReplyMsg(msg *message) (findNodeReply, error) {
+
+}
+
+func findValueReplyMsg(msg *message) (findValueReply, error) {
+
+}
+
 func initMessages() {
 	gob.Register(&storeRequest{})
 	gob.Register(&storeReply{})
