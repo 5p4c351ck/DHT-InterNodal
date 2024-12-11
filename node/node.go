@@ -32,6 +32,7 @@ func NewNode(ip string, port string) (*Node, error) {
 type LocalNode struct {
 	*Node
 	*RoutingTable
+	Codec
 	pubKey ed25519.PublicKey
 }
 
@@ -51,6 +52,7 @@ func NewLocalNode(node *Node) (*LocalNode, error) {
 	*/
 	n := &LocalNode{
 		Node:   node,
+		Codec:  NewCodec(),
 		pubKey: pub,
 	}
 	n.Cid = pubsum

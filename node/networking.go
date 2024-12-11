@@ -38,20 +38,11 @@ func (node *LocalNode) Server(ErrChan chan error) {
 
 		go func(stream []byte, address net.Addr, connection net.PacketConn) {
 			defer func() { <-semaphore }()
-			codec := NewCodec()
-			msg, err := codec.Deserialize(stream)
+			replyMsg, err := node.GenerateReply(stream)
 			if err != nil {
 				return //Add logging
 			}
-			replyMsg, err := node.ConstructReply(msg)
-			if err != nil {
-				return //Add logging
-			}
-			replyStream, err := codec.Serialize(replyMsg)
-			if err != nil {
-				return //Add logging
-			}
-			err = node.Send(replyStream, address, connection)
+			err = node.Send(replyMsg, address, connection)
 			if err != nil {
 				return //Add logging
 			}
@@ -59,31 +50,44 @@ func (node *LocalNode) Server(ErrChan chan error) {
 	}
 }
 
-func (node *LocalNode) Send(stream []byte, address net.Addr, connection net.PacketConn) error {
-	//Handle any extra logic
-	connection.WriteTo(stream, address)
+func (node *LocalNode) Send(msg *message, address net.Addr, connection net.PacketConn) error {
+	stream, err := node.Serialize(msg)
+	if err != nil {
+		return err
+	}
+	_, err = connection.WriteTo(stream, address)
+	return err
 }
 
-func (node *LocalNode) ConstructReply(msg *message) (*message, error) {
-	replyMessage := &message{}
-	var reply interface{}
-	var err error
+func (node *LocalNode) GenerateReply(stream []byte) (*message, error) {
+	if len(stream) > 0 {
+		msg, err := node.Deserialize(stream)
+		var reply interface{}
 
-	switch msg.MessageType {
-	case messagePing:
-		reply = "PONG"
-	case messageStore:
-		reply, err = storeReplyMsg(msg)
-	case messageFindNode:
-		reply, err = findNodeReplyMsg(msg)
-	case messageFindValue:
-		reply, err = findValueReplyMsg(msg)
-	default:
-		return nil, fmt.Errorf("Invalid type in message with transaction ID %d", msg.TransactionID)
+		switch msg.MessageType {
+		case messagePing:
+			reply = "PONG"
+		case messageStore:
+			reply, err = storeReplyMsg(msg)
+		case messageFindNode:
+			reply, err = findNodeReplyMsg(msg)
+		case messageFindValue:
+			reply, err = findValueReplyMsg(msg)
+		default:
+			return nil, fmt.Errorf("Invalid type in message with transaction ID %d", msg.TransactionID)
+		}
+		if err != nil {
+			return nil, err
+		}
+		replyMessage := &message{
+			MessageType:   msg.MessageType,
+			TransactionID: msg.TransactionID,
+			SenderNode:    node.Node,
+			ReceiverNode:  msg.SenderNode,
+			Request:       false,
+			Data:          reply,
+		}
+		return replyMessage, nil
 	}
-	if err != nil {
-		return nil, err
-	}
-	replyMessage.Data = reply
-	return replyMessage, nil
+	return nil, fmt.Errorf("Stream length is 0")
 }
