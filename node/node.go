@@ -33,7 +33,8 @@ type LocalNode struct {
 	*Node
 	*RoutingTable
 	Codec
-	pubKey ed25519.PublicKey
+	RpcChan chan int
+	pubKey  ed25519.PublicKey
 }
 
 func NewLocalNode(node *Node) (*LocalNode, error) {
