@@ -82,16 +82,7 @@ func Dinstance(node1, node2 *Node) (*big.Int, error) {
 }
 
 func (node *LocalNode) Ping(n *Node) bool {
-	msg := &message{
-		SenderNode:   node.Node,
-		ReceiverNode: n,
-		Request:      true,
-		Data:         []byte("data"),
-	}
-
-	codec := &CodecImp{}
-	err := node.Request(msg, codec)
-	return err == nil
+	return true
 }
 
 func (node *LocalNode) Store(cid [20]byte, value []byte) error {

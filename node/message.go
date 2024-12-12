@@ -109,16 +109,16 @@ type findValueReply struct {
 	ClosestNodes [][]*Node
 }
 
-func storeReplyMsg(msg *message) (storeReply, error) {
-
+func storeReplyMsg(msg *message) (*storeReply, error) {
+	return nil, nil
 }
 
-func findNodeReplyMsg(msg *message) (findNodeReply, error) {
-
+func findNodeReplyMsg(msg *message) (*findNodeReply, error) {
+	return nil, nil
 }
 
-func findValueReplyMsg(msg *message) (findValueReply, error) {
-
+func findValueReplyMsg(msg *message) (*findValueReply, error) {
+	return nil, nil
 }
 
 func initMessages() {
