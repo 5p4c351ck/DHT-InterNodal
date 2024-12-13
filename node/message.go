@@ -80,7 +80,7 @@ type message struct {
 	SenderNode    *Node
 	ReceiverNode  *Node
 	Request       bool
-	Data          interface{}
+	Payload       interface{}
 }
 
 type storeRequest struct {

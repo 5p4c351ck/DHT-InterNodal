@@ -11,7 +11,7 @@ const (
 	protocolUDP = "udp"
 )
 
-func (node *LocalNode) Server(ErrChan chan error, RpcChan chan int) {
+func (node *LocalNode) Server(ErrChan chan error, RpcChan chan *message) {
 	address := fmt.Sprintf("%s:%d", node.IP.String(), node.Port)
 	conn, err := net.ListenPacket(protocolUDP, address)
 	if err != nil {
@@ -25,27 +25,28 @@ func (node *LocalNode) Server(ErrChan chan error, RpcChan chan int) {
 	initMessages()
 	//Implement a semaphore using a buffered channel
 	var semaphore = make(chan struct{}, maxConns)
-
 	buffer := make([]byte, bufferSize)
+
 	for {
 		select {
 		case RPC := <-RpcChan:
-			go func() {
-				msg, err := node.GenerateRequest(RPC)
+			go func(msg *message, connection net.PacketConn) {
+				err = node.Send(msg, connection)
 				if err != nil {
-					log.Printf("error: generating request %v", err)
+					log.Printf("error: sending RPC %v", err)
 					return
 				}
 				//send request
-			}()
+			}(RPC, conn)
 		default:
 			conn.SetReadDeadline(time.Now().Add(time.Second)) // Set a timeout
-			n, addr, err := conn.ReadFrom(buffer)
+			n, _, err := conn.ReadFrom(buffer)
 			if err != nil {
 				if netErr, ok := err.(net.Error); ok && netErr.Timeout() { //Avoid logging timeouts
 					continue
 				}
 				log.Printf("error: reading from connection %v", err)
+				continue
 			}
 			//Delay new connections until the semaphore's buffer is not full
 			semaphore <- struct{}{}
@@ -53,26 +54,50 @@ func (node *LocalNode) Server(ErrChan chan error, RpcChan chan int) {
 			stream := make([]byte, n)
 			copy(stream, buffer[:])
 
-			go func(stream []byte, address net.Addr, connection net.PacketConn) {
+			go func(stream []byte, connection net.PacketConn) {
 				defer func() { <-semaphore }()
-				replyMsg, err := node.GenerateReply(stream)
+				replyMsg, err := node.GenerateRpcReply(stream)
 				if err != nil {
 					log.Printf("error: generating reply %v", err)
-					return //Add logging
+					return
 				}
-				err = node.Send(replyMsg, address, connection)
+				err = node.Send(replyMsg, connection)
 				if err != nil {
-					log.Printf("error: sending %v", err)
-					return //Add logging
+					log.Printf("error: replying %v", err)
+					return
 				}
-			}(stream, addr, conn)
+			}(stream, conn)
 		}
 	}
 }
 
-func (node *LocalNode) Send(msg *message, address net.Addr, connection net.PacketConn) error {
+func GenerateAddress(msg *message) (net.Addr, error) {
+	IP := msg.ReceiverNode.IP
+	PORT := msg.ReceiverNode.Port
+	if !msg.Request {
+		IP = msg.SenderNode.IP
+		PORT = msg.SenderNode.Port
+	}
+	if PORT < 0 || PORT > 65535 {
+		return nil, fmt.Errorf("invalid Port number %d", PORT)
+	}
+	ParsedIP := net.ParseIP(IP.String())
+	if ParsedIP == nil {
+		return nil, fmt.Errorf("invalid IP address %s", IP.String())
+	}
+	udpAddr := &net.UDPAddr{
+		IP:   ParsedIP,
+		Port: PORT,
+	}
+	return udpAddr, nil
+}
+
+func (node *LocalNode) Send(msg *message, connection net.PacketConn) error {
+	address, err := GenerateAddress(msg)
+	if err != nil {
+		return err
+	}
 	msg.SenderNode = node.Node
-	msg.R
 	stream, err := node.Serialize(msg)
 	if err != nil {
 		return err
@@ -81,36 +106,39 @@ func (node *LocalNode) Send(msg *message, address net.Addr, connection net.Packe
 	return err
 }
 
-func (node *LocalNode) GenerateRequest(RCP int) (*message, error) {
-	var request interface{}
-	switch RCP {
+func (node *LocalNode) GenerateRpcRequest(RPC *message) (*message, error) {
+	var requestPayload interface{}
+	switch RPC.MessageType {
 	case messagePing:
-		request = "PING"
+		requestPayload = "PING"
 	case messageStore:
-		request = "STORE"
+		requestPayload = "STORE"
 	case messageFindNode:
-		request = "FINDNODE"
+		requestPayload = "FINDNODE"
 	case messageFindValue:
-		request = "FINDVALUE"
+		requestPayload = "FINDVALUE"
 	default:
-		return nil, fmt.Errorf("invalid RPC type %d", RCP)
+		return nil, fmt.Errorf("invalid RPC type %d", RPC.MessageType)
 	}
+	RPC.Request = true
+	RPC.Payload = requestPayload
+	return RPC, nil
 }
 
-func (node *LocalNode) GenerateReply(stream []byte) (*message, error) {
+func (node *LocalNode) GenerateRpcReply(stream []byte) (*message, error) {
 	if len(stream) > 0 {
 		msg, err := node.Deserialize(stream)
-		var reply interface{}
+		var replyPayload interface{}
 
 		switch msg.MessageType {
 		case messagePing:
-			reply = "PONG"
+			replyPayload = "PONG"
 		case messageStore:
-			reply, err = storeReplyMsg(msg)
+			replyPayload, err = storeReplyMsg(msg)
 		case messageFindNode:
-			reply, err = findNodeReplyMsg(msg)
+			replyPayload, err = findNodeReplyMsg(msg)
 		case messageFindValue:
-			reply, err = findValueReplyMsg(msg)
+			replyPayload, err = findValueReplyMsg(msg)
 		default:
 			return nil, fmt.Errorf("invalid type in message with transaction ID %d", msg.TransactionID)
 		}
@@ -120,10 +148,10 @@ func (node *LocalNode) GenerateReply(stream []byte) (*message, error) {
 		replyMessage := &message{
 			MessageType:   msg.MessageType,
 			TransactionID: msg.TransactionID,
-			SenderNode:    node.Node,
+			SenderNode:    nil,
 			ReceiverNode:  msg.SenderNode,
 			Request:       false,
-			Data:          reply,
+			Payload:       replyPayload,
 		}
 		return replyMessage, nil
 	}

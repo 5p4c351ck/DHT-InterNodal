@@ -33,7 +33,8 @@ type LocalNode struct {
 	*Node
 	*RoutingTable
 	Codec
-	RpcChan chan int
+	RpcChan chan *message
+	nonce   uint64
 	pubKey  ed25519.PublicKey
 }
 
@@ -54,6 +55,7 @@ func NewLocalNode(node *Node) (*LocalNode, error) {
 	n := &LocalNode{
 		Node:   node,
 		Codec:  NewCodec(),
+		nonce:  0,
 		pubKey: pub,
 	}
 	n.Cid = pubsum
