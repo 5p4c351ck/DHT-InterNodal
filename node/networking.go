@@ -11,7 +11,7 @@ const (
 	protocolUDP = "udp"
 )
 
-func (node *LocalNode) Server(ErrChan chan error, RpcChan chan *message) {
+func (node *LocalNode) Server(ErrChan chan error) {
 	address := fmt.Sprintf("%s:%d", node.IP.String(), node.Port)
 	conn, err := net.ListenPacket(protocolUDP, address)
 	if err != nil {
@@ -29,7 +29,7 @@ func (node *LocalNode) Server(ErrChan chan error, RpcChan chan *message) {
 
 	for {
 		select {
-		case RPC := <-RpcChan:
+		case RPC := <-node.RpcChan:
 			go func(msg *message, connection net.PacketConn) {
 				err = node.Send(msg, connection)
 				if err != nil {
@@ -71,13 +71,10 @@ func (node *LocalNode) Server(ErrChan chan error, RpcChan chan *message) {
 	}
 }
 
-func GenerateAddress(msg *message) (net.Addr, error) {
-	IP := msg.ReceiverNode.IP
-	PORT := msg.ReceiverNode.Port
-	if !msg.Request {
-		IP = msg.SenderNode.IP
-		PORT = msg.SenderNode.Port
-	}
+func GenerateAddressFromNode(node *Node) (net.Addr, error) {
+	IP := node.IP
+	PORT := node.Port
+
 	if PORT < 0 || PORT > 65535 {
 		return nil, fmt.Errorf("invalid Port number %d", PORT)
 	}
@@ -93,7 +90,7 @@ func GenerateAddress(msg *message) (net.Addr, error) {
 }
 
 func (node *LocalNode) Send(msg *message, connection net.PacketConn) error {
-	address, err := GenerateAddress(msg)
+	address, err := GenerateAddressFromNode(msg.ReceiverNode)
 	if err != nil {
 		return err
 	}
@@ -106,9 +103,9 @@ func (node *LocalNode) Send(msg *message, connection net.PacketConn) error {
 	return err
 }
 
-func (node *LocalNode) GenerateRpcRequest(RPC *message) (*message, error) {
+func (node *LocalNode) GenerateRpcRequest(RpcType int) (*message, error) {
 	var requestPayload interface{}
-	switch RPC.MessageType {
+	switch RpcType {
 	case messagePing:
 		requestPayload = "PING"
 	case messageStore:
@@ -118,11 +115,15 @@ func (node *LocalNode) GenerateRpcRequest(RPC *message) (*message, error) {
 	case messageFindValue:
 		requestPayload = "FINDVALUE"
 	default:
-		return nil, fmt.Errorf("invalid RPC type %d", RPC.MessageType)
+		return nil, fmt.Errorf("invalid RPC type %d", RpcType)
 	}
-	RPC.Request = true
-	RPC.Payload = requestPayload
-	return RPC, nil
+	msg := &message{
+		MessageType: RpcType,
+		SenderNode:  nil,
+		Request:     true,
+		Payload:     requestPayload,
+	}
+	return msg, nil
 }
 
 func (node *LocalNode) GenerateRpcReply(stream []byte) (*message, error) {

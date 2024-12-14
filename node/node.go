@@ -53,10 +53,11 @@ func NewLocalNode(node *Node) (*LocalNode, error) {
 	}
 	*/
 	n := &LocalNode{
-		Node:   node,
-		Codec:  NewCodec(),
-		nonce:  0,
-		pubKey: pub,
+		Node:    node,
+		Codec:   NewCodec(),
+		RpcChan: make(chan *message, 1),
+		nonce:   0,
+		pubKey:  pub,
 	}
 	n.Cid = pubsum
 
@@ -84,8 +85,15 @@ func Dinstance(node1, node2 *Node) (*big.Int, error) {
 	return dinstance, nil
 }
 
-func (node *LocalNode) Ping(n *Node) bool {
-	return true
+func (node *LocalNode) Ping(n *Node) (bool, error) {
+	request, err := node.GenerateRpcRequest(messagePing)
+	if err != nil {
+		return false, err
+	}
+	request.TransactionID = 0
+	request.ReceiverNode = n
+	node.RpcChan <- request
+	return true, nil
 }
 
 func (node *LocalNode) Store(cid [20]byte, value []byte) error {

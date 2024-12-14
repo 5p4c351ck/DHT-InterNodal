@@ -25,9 +25,8 @@ func NewDHT(ip string, port string) (DHT, error) {
 		return nil, err
 	}
 	serverErrChan := make(chan error, 1)
-	serverRpcChan := make(chan int, 1)
 	go func() {
-		ln.Server(serverErrChan, serverRpcChan)
+		ln.Server(serverErrChan)
 	}()
 	if err = <-serverErrChan; err != nil {
 		return nil, err
