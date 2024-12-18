@@ -92,11 +92,12 @@ func (r *RoutingTable) InsertNode(node *Node) (int, error) {
 	}
 	//if the k-bucket is full we ping the least recently seen node
 	lrsNode := kBucket[0]
-	online := r.owner.Ping(lrsNode)
-	if online {
-		return -1, nil
-	} else {
-		r.kBuckets[index] = append(kBucket[1:], node)
-		return index, nil
+	online, err := r.owner.Ping(lrsNode)
+	if err != nil {
+		return -1, err
+	} else if online {
+		return -1, nil //add logging
 	}
+	r.kBuckets[index] = append(kBucket[1:], node)
+	return index, nil
 }
